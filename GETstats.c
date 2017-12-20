@@ -252,7 +252,7 @@ GETstats_result GETstats(const char* url,
     results->successful_gets = successful_gets;
 
     if (successful_gets == 0){
-        fprintf(stderr,"ERROR: No successul GETs\n");
+        fprintf(stderr,"ERROR: No successful GETs\n");
         free_arrays();
         return GETstats_OTHER_ERROR;
     }

@@ -28,8 +28,8 @@ static void print_result(GETresults* res){
 static void print_usage(){
     printf("USAGE:\n");
     printf("[[-H \"Header-name-0: Header-value-0\"]...[-H \"Header-name-10: Header-value-10\"]] [-n <number of samples>] \n");
-    printf("The number of samples defaults to 10, if not specified. The minimum is 1 and the maximum is 100\n");
-    printf("The maximum number of user defined HTTP headers is 20\n");
+    printf("The number of samples defaults to 10, if not specified. The minimum is 1 and the maximum is 100.\n");
+    printf("The maximum number of user defined HTTP headers is 20.\n");
 }
 
 
