@@ -1,12 +1,12 @@
 CC=gcc
 AR=ar
+CFLAGS = -g -Wall
 
 test_get_stats : test_get_stats.c libGETstats.a
-	    $(CC) test_get_stats.c -L./ -lGETstats -lcurl -o test_get_stats
+	    $(CC) $(CFLAGS) test_get_stats.c -L./ -lGETstats -lcurl -o test_get_stats
 	    
 libGETstats.a : GETstats.c GETstats.h
-	    #$(CC) -c GETstats.c -DVERBOSE_GETstats -o GETstats.o
-	    $(CC) -c GETstats.c -o GETstats.o
+	    $(CC) $(CFLAGS) -c GETstats.c -DVERBOSE_GETstats -o GETstats.o
 	    $(AR) rcs libGETstats.a GETstats.o
 
 

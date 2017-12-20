@@ -10,7 +10,9 @@
 
 
 #define DEFAULT_SAMPLES 10
-#define MAX_HEADERS 10
+#define MIN_SAMPLES 1
+#define MAX_SAMPLES 100
+#define MAX_HEADERS 20
 
 static void print_result(GETresults* res){
     printf("SKTEST;%s;%ld;%f;%f;%f;%f\n",
@@ -26,9 +28,8 @@ static void print_result(GETresults* res){
 static void print_usage(){
     printf("USAGE:\n");
     printf("[[-H \"Header-name-0: Header-value-0\"]...[-H \"Header-name-10: Header-value-10\"]] [-n <number of samples>] \n");
-    printf("The number of samples defaults to 10, if not specified\n");
-    printf("The maximum number of user defined HTTP headers is 10\n");
-
+    printf("The number of samples defaults to 10, if not specified. The minimum is 1 and the maximum is 100\n");
+    printf("The maximum number of user defined HTTP headers is 20\n");
 }
 
 
@@ -48,25 +49,26 @@ bool is_pos_int(const char* number, int len)
 
 int main(int argc, char *argv[])
 {
-
     GETresults res;
     GETstats_result result;
     char *http_headers[MAX_HEADERS];
     int num_headers=0;
     int samples=DEFAULT_SAMPLES;
     
+
+    /* check the command line arguments */
     for (int i=1; i <argc; i++) {
         if (strncmp(argv[i],"-n", 3) == 0 )
         {
             ++i;
             if (i < argc && is_pos_int(argv[i], strlen(argv[i])) == true){
                 samples = atoi(argv[i]);
+                if (samples >= MIN_SAMPLES && samples <= MAX_SAMPLES)
+                    continue;
             }
-            else{
-                fprintf(stderr,"ERROR: Bad command line\n");
-                print_usage();
-                return 1;
-            }
+            fprintf(stderr,"ERROR: Bad command line\n");
+            print_usage();
+            return 1;
         }
         else if (strncmp(argv[i],"-H", 3) == 0 && num_headers < 10)
         {
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
 
 
 
-    result = GETstats("http://example.com", samples, (const char **) http_headers, num_headers, &res);
+    result = GETstats("http://google.com/", samples, (const char **) http_headers, num_headers, &res);
 
     if (result != GETstats_OK ){
         printf ("FAILED: returned %d\n",result);

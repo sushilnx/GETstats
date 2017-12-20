@@ -137,7 +137,6 @@ GETstats_result GETstats(const char* url,
         double xconnect_time;
         double xstart_transfer_time;
         double xtotal_time;
-        struct curl_slist *list = NULL;
 
 
         /* initialize libcurl */ 
@@ -278,6 +277,10 @@ GETstats_result GETstats(const char* url,
     }
 
 #ifdef VERBOSE_GETstats
+    for (int i=0;i < successful_gets;i++)
+		fprintf(stderr,"http_server_addr[%d]=%s\n",i,http_server_addr[i]);
+    for (int i=0;i < successful_gets;i++)
+		fprintf(stderr,"http_response_code[%d]=%ld\n",i,http_response_code[i]);
     for (int i=0;i < successful_gets;i++)
 		fprintf(stderr,"name_lookup_time[%d]=%f\n",i,name_lookup_time[i]);
     for (int i=0;i < successful_gets;i++)
