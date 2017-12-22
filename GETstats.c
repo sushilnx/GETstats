@@ -10,14 +10,6 @@
 #include "GETstats.h"
 
 
-static     char** http_server_addr = NULL;
-static     long* http_response_code = NULL;
-static     double* name_lookup_time = NULL;
-static     double* connect_time = NULL;
-static     double* start_transfer_time = NULL;
-static     double* total_time = NULL;
-
-
 /* comparison function for qsort */
 static int compare_doubles(const void * a, const void * b)
 {
@@ -27,9 +19,20 @@ static int compare_doubles(const void * a, const void * b)
 }
 
 
-static void free_arrays(void){
+static void free_arrays( unsigned int successful_gets,
+                         char** http_server_addr,
+                         long* http_response_code,
+                         double* name_lookup_time,
+                         double* connect_time,
+                         double* start_transfer_time,
+                         double* total_time ){
 
-    if (http_server_addr) free(http_server_addr);
+    if (http_server_addr) {
+		/* We need to keep http_server_addr[0] as it is returned to the caller */
+        for (int i=1; i < successful_gets; i++)
+            free(http_server_addr[i]);
+        free(http_server_addr);
+    }
     if (http_response_code) free(http_response_code);
     if (name_lookup_time) free(name_lookup_time);
     if (connect_time) free(connect_time);
@@ -37,6 +40,13 @@ static void free_arrays(void){
     if (total_time) free(total_time);
 
 }
+
+static void cleanup_curl(CURL *curl, struct curl_slist *list){
+    curl_easy_cleanup(curl);
+    if (list) curl_slist_free_all(list);
+}
+
+
 
 
 static double median(double* values, unsigned numvals){
@@ -68,9 +78,13 @@ GETstats_result GETstats(const char* url,
                          unsigned number_of_gets, const char** headers,
                          unsigned num_headers, GETresults* results){
 
-    CURL *curl;
-    CURLcode res;
     unsigned int successful_gets=0;
+    char** http_server_addr = NULL;
+    long* http_response_code = NULL;
+    double* name_lookup_time = NULL;
+    double* connect_time = NULL;
+    double* start_transfer_time = NULL;
+    double* total_time = NULL;
 
     /* Check inputs */
     /* Check the URL - just checking max length for now */
@@ -92,37 +106,37 @@ GETstats_result GETstats(const char* url,
     http_server_addr = calloc(number_of_gets, sizeof(char*));
     if ( http_server_addr == NULL ){
         fprintf(stderr,"ERROR: could not allocate http_server_addr[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
     http_response_code = calloc(number_of_gets, sizeof(long));
     if ( http_response_code == NULL ){
         fprintf(stderr,"ERROR: could not allocate http_response_code[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
     name_lookup_time = calloc(number_of_gets, sizeof(double));
     if ( name_lookup_time == NULL ){
         fprintf(stderr,"ERROR: could not allocate name_lookup_time[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
     connect_time = calloc(number_of_gets, sizeof(double));
     if ( connect_time == NULL ){
         fprintf(stderr,"ERROR: could not allocate connect_time[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
     start_transfer_time = calloc(number_of_gets, sizeof(double));
     if ( start_transfer_time == NULL ){
         fprintf(stderr,"ERROR: could not allocate start_transfer_time[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
     total_time = calloc(number_of_gets, sizeof(double));
     if ( total_time == NULL ){
         fprintf(stderr,"ERROR: could not allocate total_time[]\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
 
@@ -137,6 +151,9 @@ GETstats_result GETstats(const char* url,
         double xconnect_time;
         double xstart_transfer_time;
         double xtotal_time;
+        CURL *curl;
+        CURLcode res;
+        struct curl_slist *list = NULL;
 
 
         /* initialize libcurl */ 
@@ -158,24 +175,23 @@ GETstats_result GETstats(const char* url,
         res = curl_easy_setopt(curl, CURLOPT_URL, url);
         if(res != CURLE_OK){
             fprintf(stderr,"ERROR: curl_easy_setopt() failed for CURLOPT_URL\n");
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         res = curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
         if(res != CURLE_OK){
             fprintf(stderr,"ERROR: curl_easy_setopt() failed to enable CURLOPT_HTTPGET\n");
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         if (num_headers > 0){
-            struct curl_slist *list = NULL;
             for (int j=0;j < num_headers;j++){
                 list = curl_slist_append(list, headers[j]);
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);            
             if(res != CURLE_OK){
                 fprintf(stderr,"ERROR: curl_easy_setopt() failed for CURLOPT_URL\n");
-                curl_easy_cleanup(curl);
+                cleanup_curl(curl, list);
                 continue;
             }
         }
@@ -186,7 +202,7 @@ GETstats_result GETstats(const char* url,
         res = curl_easy_perform(curl);
         if(res != CURLE_OK){
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
 
@@ -194,37 +210,37 @@ GETstats_result GETstats(const char* url,
         /* collect the stats */
         if (curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip) != CURLE_OK || ip == NULL){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_PRIMARY_IP: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &xhttp_response_code);
         if (res != CURLE_OK ){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_RESPONSE_CODE: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
                 res = curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME, &xname_lookup_time);
         if ( res != CURLE_OK ){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_NAMELOOKUP_TIME: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         res = curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME, &xconnect_time);
         if ( res != CURLE_OK ){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_CONNECT_TIME: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         res = curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &xstart_transfer_time);
         if ( res != CURLE_OK ){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_STARTTRANSFER_TIME: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
         res = curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &xtotal_time);
         if ( res != CURLE_OK ){
             fprintf(stderr, "curl_easy_getinfo() failed for CURLINFO_TOTAL_TIME: %s\n", curl_easy_strerror(res));
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
 
@@ -232,7 +248,7 @@ GETstats_result GETstats(const char* url,
         http_server_addr[successful_gets] = (char*) malloc( (strlen(ip)+1)*sizeof(char));
         if ( http_server_addr[successful_gets] == NULL ){
             fprintf(stderr, "ERROR: could not allocate http_server_addr[%d]\n", successful_gets);
-            curl_easy_cleanup(curl);
+            cleanup_curl(curl, list);
             continue;
         }
 
@@ -245,7 +261,7 @@ GETstats_result GETstats(const char* url,
 
         /* the GET succeeded, and we retrieved all the stats */
         successful_gets++;
-        curl_easy_cleanup(curl);
+        cleanup_curl(curl, list);
     }
 
 
@@ -253,7 +269,7 @@ GETstats_result GETstats(const char* url,
 
     if (successful_gets == 0){
         fprintf(stderr,"ERROR: No successful GETs\n");
-        free_arrays();
+        free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
         return GETstats_OTHER_ERROR;
     }
 
@@ -278,21 +294,21 @@ GETstats_result GETstats(const char* url,
 
 #ifdef VERBOSE_GETstats
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"http_server_addr[%d]=%s\n",i,http_server_addr[i]);
+        fprintf(stderr,"http_server_addr[%d]=%s\n",i,http_server_addr[i]);
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"http_response_code[%d]=%ld\n",i,http_response_code[i]);
+        fprintf(stderr,"http_response_code[%d]=%ld\n",i,http_response_code[i]);
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"name_lookup_time[%d]=%f\n",i,name_lookup_time[i]);
+        fprintf(stderr,"name_lookup_time[%d]=%f\n",i,name_lookup_time[i]);
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"connect_time[%d]=%f\n",i,connect_time[i]);
+        fprintf(stderr,"connect_time[%d]=%f\n",i,connect_time[i]);
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"start_transfer_time[%d]=%f\n",i,start_transfer_time[i]);
+        fprintf(stderr,"start_transfer_time[%d]=%f\n",i,start_transfer_time[i]);
     for (int i=0;i < successful_gets;i++)
-		fprintf(stderr,"total_time[%d]=%f\n",i,total_time[i]);
+        fprintf(stderr,"total_time[%d]=%f\n",i,total_time[i]);
 
     fprintf(stderr,"GETstats: successful_gets=%d\n",successful_gets);
 #endif
-    free_arrays();
+    free_arrays(successful_gets, http_server_addr, http_response_code, name_lookup_time, connect_time, start_transfer_time, total_time);
     return GETstats_OK;
     
     

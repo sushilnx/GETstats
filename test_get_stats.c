@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
     }
 
     print_result(&res);
+    free(res.http_server_addr);
     
     return 0;
 }
