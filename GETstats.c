@@ -72,11 +72,35 @@ static double median(double* values, unsigned numvals){
 }
 
 
+void GETstats_print_result(GETresults* res){
+    printf("SKTEST;%s;%ld;%f;%f;%f;%f\n",
+        res->http_server_addr,
+        res->http_response_code,
+        res->name_lookup_time,
+        res->connect_time,
+        res->start_transfer_time,
+        res->total_time);
+}
+
+
+
+
+void GETstats_cleanup(GETresults* res){
+	if (res == NULL)
+	    return;
+
+	if (res->http_server_addr)
+	    free(res->http_server_addr);
+	
+    free(res);
+}
+
+
 
 
 GETstats_result GETstats(const char* url,
                          unsigned number_of_gets, const char** headers,
-                         unsigned num_headers, GETresults* results){
+                         unsigned num_headers, GETresults** results){
 
     unsigned int successful_gets=0;
     char** http_server_addr = NULL;
@@ -85,6 +109,7 @@ GETstats_result GETstats(const char* url,
     double* connect_time = NULL;
     double* start_transfer_time = NULL;
     double* total_time = NULL;
+    GETresults* getresults;
 
     /* Check inputs */
     /* Check the URL - just checking max length for now */
@@ -102,7 +127,16 @@ GETstats_result GETstats(const char* url,
     }
 
     
-    /* Malloc arrays for result of each GET */
+    /* Allocate the results struct */
+    *results = calloc(1,sizeof(GETresults));
+    if ( *results == NULL ){
+        fprintf(stderr,"ERROR: could not allocate results struct\n");
+        return GETstats_OTHER_ERROR;
+	}
+    getresults = *results;
+
+
+    /* Allocate arrays for result of each GET */
     http_server_addr = calloc(number_of_gets, sizeof(char*));
     if ( http_server_addr == NULL ){
         fprintf(stderr,"ERROR: could not allocate http_server_addr[]\n");
@@ -265,7 +299,7 @@ GETstats_result GETstats(const char* url,
     }
 
 
-    results->successful_gets = successful_gets;
+    getresults->successful_gets = successful_gets;
 
     if (successful_gets == 0){
         fprintf(stderr,"ERROR: No successful GETs\n");
@@ -274,23 +308,15 @@ GETstats_result GETstats(const char* url,
     }
 
     /* just using the first values and discarding the rest */
-    results->http_server_addr = http_server_addr[0];
-    results->http_response_code = http_response_code[0];
+    getresults->http_server_addr = http_server_addr[0];
+    getresults->http_response_code = http_response_code[0];
 
 
-    if (successful_gets == 1){
-        /* don't need to calculate medians  */
-        results->name_lookup_time = name_lookup_time[0];
-        results->connect_time = connect_time[0];
-        results->start_transfer_time = start_transfer_time[0];
-        results->total_time = total_time[0];
-    }
-    else {
-        results->name_lookup_time = median(name_lookup_time, successful_gets);
-        results->connect_time = median(connect_time, successful_gets);
-        results->start_transfer_time = median(start_transfer_time, successful_gets);
-        results->total_time = median(total_time, successful_gets);
-    }
+    getresults->name_lookup_time = median(name_lookup_time, successful_gets);
+    getresults->connect_time = median(connect_time, successful_gets);
+    getresults->start_transfer_time = median(start_transfer_time, successful_gets);
+    getresults->total_time = median(total_time, successful_gets);
+    
 
 #ifdef VERBOSE_GETstats
     for (int i=0;i < successful_gets;i++)

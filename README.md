@@ -3,7 +3,7 @@ GETstats Library and Test Program
 =================================
 
 
-The library contains a single public function that collects statistics for HTTP GET requests.
+The main public function in the GETstats library collects statistics for HTTP GET requests.
 The test program uses this function to gather statistics from GET requests to http://google.com/
 
 To compile the library and test program:
@@ -11,6 +11,7 @@ make clean
 make
 
 Usage Example:
+export LD_LIBRARY_PATH=$PWD  #Not needed if you install libGETstats.so in the default library path
 ./test_get_stats -n 30 -H "blah : qwerty" 2>/dev/null
 
 which produces this output on stdout:

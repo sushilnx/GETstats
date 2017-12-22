@@ -14,16 +14,6 @@
 #define MAX_SAMPLES 100
 #define MAX_HEADERS 20
 
-static void print_result(GETresults* res){
-    printf("SKTEST;%s;%ld;%f;%f;%f;%f\n",
-        res->http_server_addr,
-        res->http_response_code,
-        res->name_lookup_time,
-        res->connect_time,
-        res->start_transfer_time,
-        res->total_time);
-}
-
 
 static void print_usage(){
     printf("USAGE:\n");
@@ -49,7 +39,7 @@ bool is_pos_int(const char* number, int len)
 
 int main(int argc, char *argv[])
 {
-    GETresults res;
+    GETresults* res=NULL;
     GETstats_result result;
     char *http_headers[MAX_HEADERS];
     int num_headers=0;
@@ -101,8 +91,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    print_result(&res);
-    free(res.http_server_addr);
+    GETstats_print_result(res);
+    GETstats_cleanup(res);
     
     return 0;
 }
