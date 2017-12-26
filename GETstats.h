@@ -29,7 +29,7 @@ typedef enum {
 void GETstats_print_result(GETresults* res); /* print results struct to stdout*/
 void GETstats_cleanup(GETresults* res);  /* free the reults struct */
 
-GETstats_result GETstats(const char* url, unsigned number_of_gets, const char** headers, unsigned num_headers, GETresults** results);
+GETstats_result GETstats(const char* url, unsigned number_of_gets, const char** headers, unsigned num_headers, bool verbose, GETresults** results);
 
 
 #endif /* __GETstats_H */

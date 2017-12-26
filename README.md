@@ -12,9 +12,9 @@ make
 
 Usage Example:
 export LD_LIBRARY_PATH=$PWD  #Not needed if you install libGETstats.so in the default library path
-./test_get_stats -n 30 -H "blah : qwerty" 2>/dev/null
+./test_get_stats -n 30 -H "blah : qwerty"
 
-which produces this output on stdout:
+which produces this output:
 SKTEST;216.58.208.142;302;0.060586;0.080874;0.102089;0.102196
 
 
@@ -22,9 +22,9 @@ The output format is:
 SKTEST;<IP address of HTTP server>;<HTTP response code>;<median of CURLINFO_NAMELOOKUP_TIME>;<median of CURLINFO_CONNECT_TIME>;<median of CURLINFO_STARTTRANSFER_TIME>;<median of CURLINFO_TOTAL_TIME>
 
 
-Detailed output (and errors) are written to stderr.
+Detailed output can be obtained ny using the "-v" command line option.
 
-Note: Only successful GETs are used to calculate medians. The number of successful GETs is written to stderr if the library is compiled with VERBOSE_GETstats defined.
+Note: Only successful GETs are used to calculate medians. The number of successful GETs is shown if the "-v" option is used.
 
 
 TO DOs

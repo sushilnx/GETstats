@@ -17,7 +17,7 @@
 
 static void print_usage(){
     printf("USAGE:\n");
-    printf("[[-H \"Header-name-0: Header-value-0\"]...[-H \"Header-name-10: Header-value-10\"]] [-n <number of samples>] \n");
+    printf("[[-H \"Header-name-0: Header-value-0\"]...[-H \"Header-name-10: Header-value-10\"]] [-n <number of samples>] [-v (enables verbose output)]\n");
     printf("The number of samples defaults to 10, if not specified. The minimum is 1 and the maximum is 100.\n");
     printf("The maximum number of user defined HTTP headers is 20.\n");
 }
@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     char *http_headers[MAX_HEADERS];
     int num_headers=0;
     int samples=DEFAULT_SAMPLES;
+    bool verbose=false;
     
 
     /* check the command line arguments */
@@ -69,6 +70,10 @@ int main(int argc, char *argv[])
                 num_headers++;
             }
         }
+        else if (strncmp(argv[i],"-v", 3) == 0 )
+        {
+                verbose=true;
+        }
         else if (strncmp(argv[i],"--help", 7) == 0 )
         {
                 print_usage();
@@ -84,7 +89,7 @@ int main(int argc, char *argv[])
 
 
 
-    result = GETstats("http://google.com/", samples, (const char **) http_headers, num_headers, &res);
+    result = GETstats("http://google.com/", samples, (const char **) http_headers, num_headers, verbose, &res);
 
     if (result != GETstats_OK ){
         printf ("FAILED: returned %d\n",result);
