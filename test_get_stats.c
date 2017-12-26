@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
             print_usage();
             return 1;
         }
-        else if (strncmp(argv[i],"-H", 3) == 0 && num_headers < 10)
+        else if (strncmp(argv[i],"-H", 3) == 0 && num_headers < MAX_HEADERS)
         {
             ++i;
             if (i < argc ){
