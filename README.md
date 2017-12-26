@@ -5,8 +5,10 @@ The main public function in the GETstats library collects statistics for HTTP GE
 The test program uses this function to gather statistics from GET requests to http://google.com/
 
 To compile the library and test program:
+```
 make clean
 make
+```
 
 Usage Example:
 ```
