@@ -25,7 +25,7 @@ The output format is:
 SKTEST;<IP address of HTTP server>;<HTTP response code>;<median of CURLINFO_NAMELOOKUP_TIME>;<median of CURLINFO_CONNECT_TIME>;<median of CURLINFO_STARTTRANSFER_TIME>;<median of CURLINFO_TOTAL_TIME>
 ```
 
-Detailed output can be obtained ny using the "-v" command line option.
+Detailed output can be obtained by using the "-v" command line option.
 
 Note: Only successful GETs are used to calculate medians. The number of successful GETs is shown if the "-v" option is used.
 
